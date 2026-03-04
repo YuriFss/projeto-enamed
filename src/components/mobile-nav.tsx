@@ -47,7 +47,7 @@ export function MobileNav({ user }: { user: User }) {
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="right" className="w-72">
+        <SheetContent side="right" className="w-[80vw] max-w-72">
           <div className="flex items-center gap-3 mb-6 mt-4">
             <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-medium text-indigo-700">
               {(user.user_metadata?.full_name?.[0] || user.email?.[0] || '?').toUpperCase()}

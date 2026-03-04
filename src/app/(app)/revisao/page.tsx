@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { getUser } from '@/lib/supabase/get-user'
+import { getSpecialties } from '@/lib/queries'
 import { ReviewContent } from '@/components/review-content'
 
 interface SearchParams {
@@ -9,13 +11,10 @@ interface SearchParams {
 export default async function RevisaoPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams
   const tab = params.tab || 'erradas'
+  const user = await getUser()
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: specialties } = await supabase
-    .from('specialties')
-    .select('*')
-    .order('name')
+  const specialties = await getSpecialties()
 
   // Fetch attempts based on tab
   let attemptsQuery = supabase
@@ -52,7 +51,7 @@ export default async function RevisaoPage({ searchParams }: { searchParams: Prom
           is_correct: null,
           created_at: b.created_at,
         }))}
-        specialties={specialties || []}
+        specialties={specialties}
         currentSpecialty={params.specialty}
       />
     )
@@ -90,7 +89,7 @@ export default async function RevisaoPage({ searchParams }: { searchParams: Prom
         is_correct: a.is_correct,
         created_at: a.created_at,
       }))}
-      specialties={specialties || []}
+      specialties={specialties}
       currentSpecialty={params.specialty}
     />
   )

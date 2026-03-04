@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { SimulationSession, SessionQuestion } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { SimulationTimer } from '@/components/simulation-timer'
 import { cn } from '@/lib/utils'
-import { Clock, Flag, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react'
+import { Flag, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react'
 
 interface SimulationActiveProps {
   session: SimulationSession
@@ -24,7 +25,7 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
     const firstUnanswered = initialSQ.findIndex((sq) => !sq.selected_answer)
     return firstUnanswered >= 0 ? firstUnanswered : 0
   })
-  const [elapsedSeconds, setElapsedSeconds] = useState(session.time_spent_seconds)
+  const elapsedRef = useRef(session.time_spent_seconds)
   const [questionStartTime, setQuestionStartTime] = useState(Date.now())
   const [finishing, setFinishing] = useState(false)
   const router = useRouter()
@@ -33,30 +34,13 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
   const current = questions[currentIndex]
   const question = current?.question
 
-  // Timer
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setElapsedSeconds((s) => s + 1)
-    }, 1000)
-    return () => clearInterval(interval)
+  const handleTick = useCallback((seconds: number) => {
+    elapsedRef.current = seconds
   }, [])
 
-  // Check time limit
-  useEffect(() => {
-    if (session.time_limit_minutes && elapsedSeconds >= session.time_limit_minutes * 60) {
-      finishSimulation()
-    }
-  }, [elapsedSeconds, session.time_limit_minutes])
-
-  function formatTime(seconds: number) {
-    const m = Math.floor(seconds / 60)
-    const s = seconds % 60
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-  }
-
-  const timeLeft = session.time_limit_minutes
-    ? Math.max(0, session.time_limit_minutes * 60 - elapsedSeconds)
-    : null
+  const handleTimeUp = useCallback(() => {
+    finishSimulation()
+  }, [])
 
   async function handleAnswer(alt: 'A' | 'B' | 'C' | 'D' | 'E') {
     if (current.selected_answer && session.mode === 'prova') return
@@ -116,7 +100,7 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
       .update({
         status: 'completed',
         correct_answers: correctCount,
-        time_spent_seconds: elapsedSeconds,
+        time_spent_seconds: elapsedRef.current,
         finished_at: new Date().toISOString(),
       })
       .eq('id', session.id)
@@ -165,10 +149,12 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 text-sm font-mono">
-            <Clock className="h-4 w-4" />
-            {timeLeft !== null ? formatTime(timeLeft) : formatTime(elapsedSeconds)}
-          </div>
+          <SimulationTimer
+            initialSeconds={session.time_spent_seconds}
+            timeLimitMinutes={session.time_limit_minutes}
+            onTick={handleTick}
+            onTimeUp={handleTimeUp}
+          />
           <Button variant="destructive" size="sm" onClick={finishSimulation} disabled={finishing}>
             Finalizar
           </Button>

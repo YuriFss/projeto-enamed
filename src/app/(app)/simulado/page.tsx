@@ -1,15 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
+import { getUser } from '@/lib/supabase/get-user'
+import { getExams, getSpecialties } from '@/lib/queries'
 import { SimulationSetup } from '@/components/simulation-setup'
 
 export default async function SimuladoPage() {
+  const user = await getUser()
   const supabase = await createClient()
 
-  const [{ data: exams }, { data: specialties }] = await Promise.all([
-    supabase.from('exams').select('*').order('year', { ascending: false }),
-    supabase.from('specialties').select('*').order('name'),
-  ])
-
-  const { data: { user } } = await supabase.auth.getUser()
+  const [exams, specialties] = await Promise.all([getExams(), getSpecialties()])
 
   // Get in-progress session
   const { data: activeSession } = await supabase
@@ -25,8 +23,8 @@ export default async function SimuladoPage() {
     <div>
       <h1 className="text-2xl font-bold mb-6">Simulado</h1>
       <SimulationSetup
-        exams={exams || []}
-        specialties={specialties || []}
+        exams={exams}
+        specialties={specialties}
         activeSessionId={activeSession?.id}
       />
     </div>

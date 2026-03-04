@@ -1,11 +1,12 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getUser } from '@/lib/supabase/get-user'
 import { SimulationResult } from '@/components/simulation-result'
 
 export default async function ResultadoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const user = await getUser()
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
 
   const { data: session } = await supabase
     .from('simulation_sessions')

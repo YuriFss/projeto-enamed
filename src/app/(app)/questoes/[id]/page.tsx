@@ -1,10 +1,12 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getUser } from '@/lib/supabase/get-user'
 import { QuestionView } from '@/components/question-view'
 
 export default async function QuestionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
+  const user = await getUser()
 
   const { data: question } = await supabase
     .from('questions')
@@ -15,8 +17,6 @@ export default async function QuestionPage({ params }: { params: Promise<{ id: s
   if (!question) {
     notFound()
   }
-
-  const { data: { user } } = await supabase.auth.getUser()
 
   // Check if bookmarked
   const { data: bookmark } = await supabase

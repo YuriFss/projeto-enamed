@@ -1,12 +1,19 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SpecialtyStats, WeeklyAccuracy } from '@/lib/types'
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line,
-} from 'recharts'
 import { BookOpen, Target, Clock, Flame, AlertTriangle } from 'lucide-react'
+
+const SpecialtyBarChart = dynamic(
+  () => import('@/components/dashboard-charts').then((m) => m.SpecialtyBarChart),
+  { loading: () => <div className="h-[200px] sm:h-[300px] bg-gray-100 animate-pulse rounded" /> }
+)
+
+const WeeklyLineChart = dynamic(
+  () => import('@/components/dashboard-charts').then((m) => m.WeeklyLineChart),
+  { loading: () => <div className="h-[200px] sm:h-[300px] bg-gray-100 animate-pulse rounded" /> }
+)
 
 interface DashboardContentProps {
   stats: {
@@ -52,48 +59,48 @@ export function DashboardContent({ stats, specialtyStats, weeklyAccuracy }: Dash
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-3">
-              <BookOpen className="h-8 w-8 text-indigo-500" />
-              <div>
-                <p className="text-2xl font-bold">{stats.total_answered}</p>
-                <p className="text-xs text-gray-500">Questoes respondidas</p>
+              <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-indigo-500 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-lg sm:text-2xl font-bold">{stats.total_answered}</p>
+                <p className="text-xs text-gray-500 truncate">Questoes respondidas</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-3">
-              <Target className="h-8 w-8 text-green-500" />
-              <div>
-                <p className="text-2xl font-bold">{stats.accuracy}%</p>
-                <p className="text-xs text-gray-500">Acuracia geral</p>
+              <Target className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-lg sm:text-2xl font-bold">{stats.accuracy}%</p>
+                <p className="text-xs text-gray-500 truncate">Acuracia geral</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-3">
-              <Clock className="h-8 w-8 text-blue-500" />
-              <div>
-                <p className="text-2xl font-bold">{formatStudyTime(stats.total_time_seconds)}</p>
-                <p className="text-xs text-gray-500">Tempo de estudo</p>
+              <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-lg sm:text-2xl font-bold">{formatStudyTime(stats.total_time_seconds)}</p>
+                <p className="text-xs text-gray-500 truncate">Tempo de estudo</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-3">
-              <Flame className="h-8 w-8 text-orange-500" />
-              <div>
-                <p className="text-2xl font-bold">{stats.study_streak}</p>
-                <p className="text-xs text-gray-500">Dias seguidos</p>
+              <Flame className="h-6 w-6 sm:h-8 sm:w-8 text-orange-500 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-lg sm:text-2xl font-bold">{stats.study_streak}</p>
+                <p className="text-xs text-gray-500 truncate">Dias seguidos</p>
               </div>
             </div>
           </CardContent>
@@ -107,19 +114,9 @@ export function DashboardContent({ stats, specialtyStats, weeklyAccuracy }: Dash
             <CardTitle className="text-lg">Acuracia por Especialidade</CardTitle>
           </CardHeader>
           <CardContent>
-            {barData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={barData} layout="vertical" margin={{ left: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" domain={[0, 100]} unit="%" />
-                  <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={(value) => `${value}%`} />
-                  <Bar dataKey="accuracy" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-gray-400 text-center py-12">Responda questoes para ver estatisticas</p>
-            )}
+            <div className="h-[200px] sm:h-[300px]">
+              <SpecialtyBarChart data={barData} />
+            </div>
           </CardContent>
         </Card>
 
@@ -129,19 +126,9 @@ export function DashboardContent({ stats, specialtyStats, weeklyAccuracy }: Dash
             <CardTitle className="text-lg">Evolucao Semanal</CardTitle>
           </CardHeader>
           <CardContent>
-            {lineData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={lineData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" tick={{ fontSize: 12 }} />
-                  <YAxis domain={[0, 100]} unit="%" />
-                  <Tooltip formatter={(value) => `${value}%`} />
-                  <Line type="monotone" dataKey="accuracy" stroke="#6366f1" strokeWidth={2} dot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-gray-400 text-center py-12">Responda questoes para ver evolucao</p>
-            )}
+            <div className="h-[200px] sm:h-[300px]">
+              <WeeklyLineChart data={lineData} />
+            </div>
           </CardContent>
         </Card>
       </div>

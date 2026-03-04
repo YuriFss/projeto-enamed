@@ -1,5 +1,5 @@
-import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { getExams, getSpecialties } from '@/lib/queries'
 import { QuestionFilters } from '@/components/question-filters'
 import { QuestionList } from '@/components/question-list'
 
@@ -22,11 +22,8 @@ export default async function QuestoesPage({
   const params = await searchParams
   const supabase = await createClient()
 
-  // Fetch filter options
-  const [{ data: exams }, { data: specialties }] = await Promise.all([
-    supabase.from('exams').select('*').order('year', { ascending: false }),
-    supabase.from('specialties').select('*').order('name'),
-  ])
+  // Fetch filter options (cached)
+  const [exams, specialties] = await Promise.all([getExams(), getSpecialties()])
 
   // Build query
   const page = parseInt(params.page || '1')
@@ -40,11 +37,11 @@ export default async function QuestoesPage({
     .range(from, to)
 
   if (params.year) {
-    const examIds = exams?.filter((e) => e.year === parseInt(params.year!)).map((e) => e.id) || []
+    const examIds = exams.filter((e) => e.year === parseInt(params.year!)).map((e) => e.id) || []
     if (examIds.length > 0) query = query.in('exam_id', examIds)
   }
   if (params.type) {
-    const examIds = exams?.filter((e) => e.type === params.type).map((e) => e.id) || []
+    const examIds = exams.filter((e) => e.type === params.type).map((e) => e.id) || []
     if (examIds.length > 0) query = query.in('exam_id', examIds)
   }
   if (params.specialty) {
@@ -59,7 +56,7 @@ export default async function QuestoesPage({
   const totalPages = Math.ceil((count || 0) / PAGE_SIZE)
 
   // Get unique years
-  const years = [...new Set(exams?.map((e) => e.year) || [])].sort((a, b) => b - a)
+  const years = [...new Set(exams.map((e) => e.year))].sort((a, b) => b - a)
 
   return (
     <div>
@@ -67,7 +64,7 @@ export default async function QuestoesPage({
 
       <QuestionFilters
         years={years}
-        specialties={specialties || []}
+        specialties={specialties}
         currentFilters={params}
       />
 
