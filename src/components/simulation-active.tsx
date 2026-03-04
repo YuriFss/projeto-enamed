@@ -123,15 +123,15 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
 
   function getAlternativeStyle(alt: string) {
     if (!showFeedback) {
-      return current.selected_answer === alt ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'
+      return current.selected_answer === alt ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950' : 'border-border hover:border-border/80'
     }
     if (alt === question!.correct_answer) {
-      return 'border-green-500 bg-green-50'
+      return 'border-green-500 bg-green-50 dark:bg-green-950'
     }
     if (alt === current.selected_answer && alt !== question!.correct_answer) {
-      return 'border-red-500 bg-red-50'
+      return 'border-red-500 bg-red-50 dark:bg-red-950'
     }
-    return 'border-gray-200 opacity-60'
+    return 'border-border opacity-60'
   }
 
   const answeredCount = questions.filter((q) => q.selected_answer).length
@@ -144,7 +144,7 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
           <Badge variant="outline">
             {session.mode === 'estudo' ? 'Modo Estudo' : 'Modo Prova'}
           </Badge>
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-muted-foreground">
             {answeredCount}/{questions.length} respondidas
           </span>
         </div>
@@ -170,10 +170,10 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
             className={cn(
               'w-8 h-8 rounded text-xs font-medium border transition-colors',
               i === currentIndex && 'ring-2 ring-indigo-500',
-              sq.selected_answer && session.mode === 'estudo' && sq.is_correct && 'bg-green-100 border-green-400',
-              sq.selected_answer && session.mode === 'estudo' && !sq.is_correct && 'bg-red-100 border-red-400',
-              sq.selected_answer && session.mode === 'prova' && 'bg-indigo-100 border-indigo-400',
-              !sq.selected_answer && 'bg-white border-gray-300',
+              sq.selected_answer && session.mode === 'estudo' && sq.is_correct && 'bg-green-100 dark:bg-green-900 border-green-400',
+              sq.selected_answer && session.mode === 'estudo' && !sq.is_correct && 'bg-red-100 dark:bg-red-900 border-red-400',
+              sq.selected_answer && session.mode === 'prova' && 'bg-indigo-100 dark:bg-indigo-900 border-indigo-400',
+              !sq.selected_answer && 'bg-background border-border',
               sq.flagged && 'ring-2 ring-yellow-400'
             )}
           >
@@ -187,7 +187,7 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-500">
+              <span className="text-sm font-medium text-muted-foreground">
                 Questao {currentIndex + 1} de {questions.length}
               </span>
               {question.specialty && (
@@ -229,9 +229,9 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
           </div>
 
           {showFeedback && question.explanation && (
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm font-medium text-blue-800 mb-1">Explicacao:</p>
-              <p className="text-sm text-blue-700">{question.explanation}</p>
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">Explicacao:</p>
+              <p className="text-sm text-blue-700 dark:text-blue-300">{question.explanation}</p>
             </div>
           )}
 

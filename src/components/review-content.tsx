@@ -49,14 +49,14 @@ export function ReviewContent({ tab, items, specialties, currentSpecialty }: Rev
       <h1 className="text-2xl font-bold mb-6">Revisao</h1>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
+      <div className="flex gap-1 mb-4 bg-muted rounded-lg p-1 w-fit">
         {tabs.map((t) => (
           <button
             key={t.value}
             onClick={() => updateParam('tab', t.value)}
             className={cn(
               'px-4 py-2 text-sm font-medium rounded-md transition-colors',
-              tab === t.value ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'
+              tab === t.value ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
             )}
           >
             {t.label}
@@ -67,7 +67,7 @@ export function ReviewContent({ tab, items, specialties, currentSpecialty }: Rev
       {/* Specialty filter */}
       <div className="flex gap-3 mb-6">
         <select
-          className="border rounded-md px-3 py-2 text-sm bg-white"
+          className="border rounded-md px-3 py-2 text-sm bg-background"
           value={currentSpecialty || ''}
           onChange={(e) => updateParam('specialty', e.target.value)}
         >
@@ -79,7 +79,7 @@ export function ReviewContent({ tab, items, specialties, currentSpecialty }: Rev
       </div>
 
       {items.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 text-muted-foreground">
           <p className="text-lg">
             {tab === 'erradas' && 'Nenhuma questao errada ainda.'}
             {tab === 'marcadas' && 'Nenhuma questao marcada.'}
@@ -108,12 +108,12 @@ export function ReviewContent({ tab, items, specialties, currentSpecialty }: Rev
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="text-sm text-gray-500">{q.exam?.name} — Q{q.number}</span>
+                          <span className="text-sm text-muted-foreground">{q.exam?.name} — Q{q.number}</span>
                           <Badge variant="outline" style={{ borderColor: q.specialty?.color, color: q.specialty?.color }}>
                             {q.specialty?.name}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-700 line-clamp-2">{q.statement}</p>
+                        <p className="text-sm text-foreground line-clamp-2">{q.statement}</p>
                         {item.selected_answer && (
                           <div className="flex gap-3 mt-2 text-xs">
                             <span className={item.is_correct ? 'text-green-600' : 'text-red-600'}>

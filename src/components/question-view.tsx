@@ -23,9 +23,9 @@ interface QuestionViewProps {
 const alternatives = ['A', 'B', 'C', 'D', 'E'] as const
 
 const difficultyColors: Record<string, string> = {
-  facil: 'bg-green-100 text-green-800',
-  medio: 'bg-yellow-100 text-yellow-800',
-  dificil: 'bg-red-100 text-red-800',
+  facil: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
+  medio: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
+  dificil: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200',
 }
 
 export function QuestionView({
@@ -90,21 +90,21 @@ export function QuestionView({
 
   function getAlternativeStyle(alt: string) {
     if (!answered) {
-      return selected === alt ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'
+      return selected === alt ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950' : 'border-border hover:border-border/80'
     }
     if (alt === question.correct_answer) {
-      return 'border-green-500 bg-green-50'
+      return 'border-green-500 bg-green-50 dark:bg-green-950'
     }
     if (alt === selected && alt !== question.correct_answer) {
-      return 'border-red-500 bg-red-50'
+      return 'border-red-500 bg-red-50 dark:bg-red-950'
     }
-    return 'border-gray-200 opacity-60'
+    return 'border-border opacity-60'
   }
 
   return (
     <div className="max-w-3xl mx-auto">
       {showNavigation && (
-        <Link href="/questoes" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4">
+        <Link href="/questoes" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
           <ArrowLeft className="h-4 w-4" />
           Voltar ao banco
         </Link>
@@ -114,7 +114,7 @@ export function QuestionView({
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium text-gray-500">
+              <span className="text-sm font-medium text-muted-foreground">
                 {question.exam?.name} — Q{question.number}
               </span>
               <Badge variant="outline" style={{ borderColor: question.specialty?.color, color: question.specialty?.color }}>
@@ -156,15 +156,15 @@ export function QuestionView({
           </div>
 
           {answered && question.explanation && (
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm font-medium text-blue-800 mb-1">Explicacao:</p>
-              <p className="text-sm text-blue-700">{question.explanation}</p>
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">Explicacao:</p>
+              <p className="text-sm text-blue-700 dark:text-blue-300">{question.explanation}</p>
             </div>
           )}
 
           {lastAttempt && !answered && (
-            <div className="mt-4 p-3 bg-gray-50 border rounded-lg">
-              <p className="text-sm text-gray-600">
+            <div className="mt-4 p-3 bg-muted/50 border rounded-lg">
+              <p className="text-sm text-muted-foreground">
                 Ultima tentativa: respondeu <span className={lastAttempt.is_correct ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>({lastAttempt.selected_answer})</span>
                 {lastAttempt.is_correct ? ' — Acertou!' : ` — Errou. Correta: (${question.correct_answer})`}
               </p>

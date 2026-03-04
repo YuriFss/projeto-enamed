@@ -11,7 +11,7 @@ interface SpecialtyBarChartProps {
 
 export function SpecialtyBarChart({ data }: SpecialtyBarChartProps) {
   if (data.length === 0) {
-    return <p className="text-gray-400 text-center py-12">Responda questoes para ver estatisticas</p>
+    return <p className="text-muted-foreground text-center py-12">Responda questoes para ver estatisticas</p>
   }
 
   return (
@@ -33,7 +33,7 @@ interface WeeklyLineChartProps {
 
 export function WeeklyLineChart({ data }: WeeklyLineChartProps) {
   if (data.length === 0) {
-    return <p className="text-gray-400 text-center py-12">Responda questoes para ver evolucao</p>
+    return <p className="text-muted-foreground text-center py-12">Responda questoes para ver evolucao</p>
   }
 
   return (

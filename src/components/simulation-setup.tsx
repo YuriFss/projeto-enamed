@@ -100,9 +100,9 @@ export function SimulationSetup({ exams, specialties, activeSessionId }: Simulat
   return (
     <div className="max-w-lg mx-auto">
       {activeSessionId && (
-        <Card className="mb-6 border-indigo-200 bg-indigo-50">
+        <Card className="mb-6 border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950">
           <CardContent className="p-4 flex items-center justify-between">
-            <p className="text-sm text-indigo-700">Voce tem um simulado em andamento.</p>
+            <p className="text-sm text-indigo-700 dark:text-indigo-300">Voce tem um simulado em andamento.</p>
             <Link href={`/simulado/${activeSessionId}`}>
               <Button size="sm">Continuar</Button>
             </Link>
@@ -133,7 +133,7 @@ export function SimulationSetup({ exams, specialties, activeSessionId }: Simulat
                 Prova
               </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {mode === 'estudo' ? 'Feedback imediato apos cada resposta' : 'Sem feedback ate o final'}
             </p>
           </div>
@@ -141,7 +141,7 @@ export function SimulationSetup({ exams, specialties, activeSessionId }: Simulat
           <div>
             <Label className="mb-2 block">Prova</Label>
             <select
-              className="w-full border rounded-md px-3 py-2 text-sm bg-white"
+              className="w-full border rounded-md px-3 py-2 text-sm bg-background"
               value={examType}
               onChange={(e) => setExamType(e.target.value)}
             >
@@ -154,7 +154,7 @@ export function SimulationSetup({ exams, specialties, activeSessionId }: Simulat
           <div>
             <Label className="mb-2 block">Ano</Label>
             <select
-              className="w-full border rounded-md px-3 py-2 text-sm bg-white"
+              className="w-full border rounded-md px-3 py-2 text-sm bg-background"
               value={year}
               onChange={(e) => setYear(e.target.value)}
             >
@@ -168,7 +168,7 @@ export function SimulationSetup({ exams, specialties, activeSessionId }: Simulat
           <div>
             <Label className="mb-2 block">Especialidade</Label>
             <select
-              className="w-full border rounded-md px-3 py-2 text-sm bg-white"
+              className="w-full border rounded-md px-3 py-2 text-sm bg-background"
               value={specialtyId}
               onChange={(e) => setSpecialtyId(e.target.value)}
             >

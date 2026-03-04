@@ -7,12 +7,12 @@ import { BookOpen, Target, Clock, Flame, AlertTriangle } from 'lucide-react'
 
 const SpecialtyBarChart = dynamic(
   () => import('@/components/dashboard-charts').then((m) => m.SpecialtyBarChart),
-  { loading: () => <div className="h-[200px] sm:h-[300px] bg-gray-100 animate-pulse rounded" /> }
+  { loading: () => <div className="h-[200px] sm:h-[300px] bg-muted animate-pulse rounded" /> }
 )
 
 const WeeklyLineChart = dynamic(
   () => import('@/components/dashboard-charts').then((m) => m.WeeklyLineChart),
-  { loading: () => <div className="h-[200px] sm:h-[300px] bg-gray-100 animate-pulse rounded" /> }
+  { loading: () => <div className="h-[200px] sm:h-[300px] bg-muted animate-pulse rounded" /> }
 )
 
 interface DashboardContentProps {
@@ -64,7 +64,7 @@ export function DashboardContent({ stats, specialtyStats, weeklyAccuracy }: Dash
               <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-indigo-500 shrink-0" />
               <div className="min-w-0">
                 <p className="text-lg sm:text-2xl font-bold">{stats.total_answered}</p>
-                <p className="text-xs text-gray-500 truncate">Questoes respondidas</p>
+                <p className="text-xs text-muted-foreground truncate">Questoes respondidas</p>
               </div>
             </div>
           </CardContent>
@@ -76,7 +76,7 @@ export function DashboardContent({ stats, specialtyStats, weeklyAccuracy }: Dash
               <Target className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 shrink-0" />
               <div className="min-w-0">
                 <p className="text-lg sm:text-2xl font-bold">{stats.accuracy}%</p>
-                <p className="text-xs text-gray-500 truncate">Acuracia geral</p>
+                <p className="text-xs text-muted-foreground truncate">Acuracia geral</p>
               </div>
             </div>
           </CardContent>
@@ -88,7 +88,7 @@ export function DashboardContent({ stats, specialtyStats, weeklyAccuracy }: Dash
               <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 shrink-0" />
               <div className="min-w-0">
                 <p className="text-lg sm:text-2xl font-bold">{formatStudyTime(stats.total_time_seconds)}</p>
-                <p className="text-xs text-gray-500 truncate">Tempo de estudo</p>
+                <p className="text-xs text-muted-foreground truncate">Tempo de estudo</p>
               </div>
             </div>
           </CardContent>
@@ -100,7 +100,7 @@ export function DashboardContent({ stats, specialtyStats, weeklyAccuracy }: Dash
               <Flame className="h-6 w-6 sm:h-8 sm:w-8 text-orange-500 shrink-0" />
               <div className="min-w-0">
                 <p className="text-lg sm:text-2xl font-bold">{stats.study_streak}</p>
-                <p className="text-xs text-gray-500 truncate">Dias seguidos</p>
+                <p className="text-xs text-muted-foreground truncate">Dias seguidos</p>
               </div>
             </div>
           </CardContent>
@@ -152,7 +152,7 @@ export function DashboardContent({ stats, specialtyStats, weeklyAccuracy }: Dash
                   </div>
                   <div className="text-sm">
                     <span className="font-medium">{sp.accuracy}%</span>
-                    <span className="text-gray-400 ml-2">({sp.correct_attempts}/{sp.total_attempts})</span>
+                    <span className="text-muted-foreground ml-2">({sp.correct_attempts}/{sp.total_attempts})</span>
                   </div>
                 </div>
               ))}
@@ -164,9 +164,9 @@ export function DashboardContent({ stats, specialtyStats, weeklyAccuracy }: Dash
       {stats.total_answered === 0 && (
         <Card className="mt-6">
           <CardContent className="p-8 text-center">
-            <BookOpen className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-            <h2 className="text-lg font-medium text-gray-700 mb-2">Comece a estudar!</h2>
-            <p className="text-gray-500 mb-4">Responda questoes ou faca simulados para ver suas estatisticas aqui.</p>
+            <BookOpen className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+            <h2 className="text-lg font-medium text-foreground mb-2">Comece a estudar!</h2>
+            <p className="text-muted-foreground mb-4">Responda questoes ou faca simulados para ver suas estatisticas aqui.</p>
           </CardContent>
         </Card>
       )}

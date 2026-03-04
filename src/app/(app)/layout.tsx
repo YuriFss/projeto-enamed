@@ -11,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <AppSidebar user={user} />
       <MobileNav user={user} />
       <main className="lg:pl-64">

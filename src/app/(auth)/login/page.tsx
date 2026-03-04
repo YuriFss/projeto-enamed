@@ -35,7 +35,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">ENAMED Study</CardTitle>
@@ -72,9 +72,9 @@ export default function LoginPage() {
               {loading ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
-          <p className="mt-4 text-center text-sm text-gray-600">
+          <p className="mt-4 text-center text-sm text-muted-foreground">
             Nao tem conta?{' '}
-            <Link href="/registro" className="text-indigo-600 hover:underline">
+            <Link href="/registro" className="text-indigo-600 dark:text-indigo-400 hover:underline">
               Criar conta
             </Link>
           </p>

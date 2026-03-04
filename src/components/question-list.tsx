@@ -16,9 +16,9 @@ interface QuestionListProps {
 }
 
 const difficultyColors: Record<string, string> = {
-  facil: 'bg-green-100 text-green-800',
-  medio: 'bg-yellow-100 text-yellow-800',
-  dificil: 'bg-red-100 text-red-800',
+  facil: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
+  medio: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
+  dificil: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200',
 }
 
 export function QuestionList({ questions, currentPage, totalPages, totalCount }: QuestionListProps) {
@@ -33,7 +33,7 @@ export function QuestionList({ questions, currentPage, totalPages, totalCount }:
 
   if (questions.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
+      <div className="text-center py-12 text-muted-foreground">
         <p className="text-lg">Nenhuma questao encontrada.</p>
         <p className="text-sm mt-1">Tente ajustar os filtros.</p>
       </div>
@@ -42,7 +42,7 @@ export function QuestionList({ questions, currentPage, totalPages, totalCount }:
 
   return (
     <div>
-      <p className="text-sm text-gray-500 mb-4">{totalCount} questoes encontradas</p>
+      <p className="text-sm text-muted-foreground mb-4">{totalCount} questoes encontradas</p>
 
       <div className="space-y-3">
         {questions.map((q) => (
@@ -51,7 +51,7 @@ export function QuestionList({ questions, currentPage, totalPages, totalCount }:
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm font-medium text-gray-500">
+                    <span className="text-sm font-medium text-muted-foreground">
                       {q.exam?.name} — Q{q.number}
                     </span>
                     <Badge variant="outline" style={{ borderColor: q.specialty?.color, color: q.specialty?.color }}>
@@ -61,7 +61,7 @@ export function QuestionList({ questions, currentPage, totalPages, totalCount }:
                       {q.difficulty}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-700 line-clamp-2">
+                  <p className="text-sm text-foreground line-clamp-2">
                     {q.statement}
                   </p>
                 </div>
@@ -81,7 +81,7 @@ export function QuestionList({ questions, currentPage, totalPages, totalCount }:
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-muted-foreground">
             Pagina {currentPage} de {totalPages}
           </span>
           <Button

@@ -48,7 +48,7 @@ export default function RegistroPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Criar Conta</CardTitle>
@@ -96,9 +96,9 @@ export default function RegistroPage() {
               {loading ? 'Criando conta...' : 'Criar conta'}
             </Button>
           </form>
-          <p className="mt-4 text-center text-sm text-gray-600">
+          <p className="mt-4 text-center text-sm text-muted-foreground">
             Ja tem conta?{' '}
-            <Link href="/login" className="text-indigo-600 hover:underline">
+            <Link href="/login" className="text-indigo-600 dark:text-indigo-400 hover:underline">
               Entrar
             </Link>
           </p>

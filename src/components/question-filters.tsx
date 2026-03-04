@@ -39,7 +39,7 @@ export function QuestionFilters({ years, specialties, currentFilters }: Question
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
       <select
-        className="w-full border rounded-md px-3 py-2 text-sm bg-white"
+        className="w-full border rounded-md px-3 py-2 text-sm bg-background"
         value={currentFilters.type || ''}
         onChange={(e) => updateFilter('type', e.target.value)}
       >
@@ -49,7 +49,7 @@ export function QuestionFilters({ years, specialties, currentFilters }: Question
       </select>
 
       <select
-        className="w-full border rounded-md px-3 py-2 text-sm bg-white"
+        className="w-full border rounded-md px-3 py-2 text-sm bg-background"
         value={currentFilters.year || ''}
         onChange={(e) => updateFilter('year', e.target.value)}
       >
@@ -60,7 +60,7 @@ export function QuestionFilters({ years, specialties, currentFilters }: Question
       </select>
 
       <select
-        className="w-full border rounded-md px-3 py-2 text-sm bg-white"
+        className="w-full border rounded-md px-3 py-2 text-sm bg-background"
         value={currentFilters.specialty || ''}
         onChange={(e) => updateFilter('specialty', e.target.value)}
       >
@@ -71,7 +71,7 @@ export function QuestionFilters({ years, specialties, currentFilters }: Question
       </select>
 
       <select
-        className="w-full border rounded-md px-3 py-2 text-sm bg-white"
+        className="w-full border rounded-md px-3 py-2 text-sm bg-background"
         value={currentFilters.difficulty || ''}
         onChange={(e) => updateFilter('difficulty', e.target.value)}
       >
