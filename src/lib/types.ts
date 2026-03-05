@@ -19,6 +19,8 @@ export interface Topic {
   specialty?: Specialty
 }
 
+export type QuestionBankSort = 'recent' | 'most_wrong' | 'least_reviewed'
+
 export interface Question {
   id: string
   exam_id: string
@@ -37,9 +39,20 @@ export interface Question {
   created_at: string
   isAnswered?: boolean
   lastAnsweredAt?: string | null
+  history?: QuestionHistorySummary
   exam?: Exam
   specialty?: Specialty
   topic?: Topic
+}
+
+export interface QuestionHistorySummary {
+  attemptsCount: number
+  correctCount: number
+  incorrectCount: number
+  averageTimeSpentSeconds: number
+  lastAttemptAt: string | null
+  lastAttemptCorrect: boolean | null
+  learningState: 'inedita' | 'instavel' | 'consolidada'
 }
 
 export interface Profile {
@@ -110,4 +123,40 @@ export interface WeeklyAccuracy {
   total: number
   correct: number
   accuracy: number
+}
+
+export interface TopicStats {
+  topic_id: string
+  topic_name: string
+  specialty_id: string
+  specialty_name: string
+  total_attempts: number
+  correct_attempts: number
+  accuracy: number
+}
+
+export interface LearningWindowStats {
+  days: 7 | 14 | 30
+  attempts: number
+  correct_attempts: number
+  accuracy: number
+  average_time_seconds: number
+  delta_vs_previous_window: number | null
+}
+
+export interface LearningCurveStats {
+  first_attempt_count: number
+  first_attempt_accuracy: number
+  repeat_attempt_count: number
+  repeat_attempt_accuracy: number
+  questions_with_repeats: number
+  recoverable_questions: number
+  recovered_questions: number
+  recovery_rate: number
+  improvement_delta: number
+}
+
+export interface LearningAnalytics {
+  windows: LearningWindowStats[]
+  curve: LearningCurveStats
 }

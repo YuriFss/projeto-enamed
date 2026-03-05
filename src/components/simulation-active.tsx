@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { SimulationSession, SessionQuestion } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
@@ -26,7 +26,7 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
     return firstUnanswered >= 0 ? firstUnanswered : 0
   })
   const elapsedRef = useRef(session.time_spent_seconds)
-  const [questionStartTime, setQuestionStartTime] = useState(Date.now())
+  const questionStartRef = useRef(0)
   const [finishing, setFinishing] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -38,16 +38,38 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
     elapsedRef.current = seconds
   }, [])
 
-  const handleTimeUp = useCallback(() => {
-    finishSimulation()
-  }, [])
+  useEffect(() => {
+    questionStartRef.current = window.performance.now()
+  }, [currentIndex])
 
-  async function handleAnswer(alt: 'A' | 'B' | 'C' | 'D' | 'E') {
+  const finishSimulation = useCallback(async () => {
+    setFinishing(true)
+    const correctCount = questions.filter((q) => q.is_correct).length
+
+    await supabase
+      .from('simulation_sessions')
+      .update({
+        status: 'completed',
+        correct_answers: correctCount,
+        time_spent_seconds: elapsedRef.current,
+        finished_at: new Date().toISOString(),
+      })
+      .eq('id', session.id)
+
+    router.push(`/simulado/resultado/${session.id}`)
+  }, [questions, router, session.id, supabase])
+
+  const handleTimeUp = useCallback(() => {
+    void finishSimulation()
+  }, [finishSimulation])
+
+  async function handleAnswer(alt: 'A' | 'B' | 'C' | 'D' | 'E', timeStamp: number) {
+    if (!current || !question) return
     if (current.selected_answer && session.mode === 'prova') return
     if (current.selected_answer && session.mode === 'estudo') return
 
-    const timeSpent = Math.round((Date.now() - questionStartTime) / 1000)
-    const isCorrect = alt === question!.correct_answer
+    const timeSpent = Math.max(0, Math.round((timeStamp - questionStartRef.current) / 1000))
+    const isCorrect = alt === question.correct_answer
 
     const updatedQuestions = [...questions]
     updatedQuestions[currentIndex] = {
@@ -77,7 +99,6 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
 
   function goTo(index: number) {
     setCurrentIndex(index)
-    setQuestionStartTime(Date.now())
   }
 
   async function toggleFlag() {
@@ -89,23 +110,6 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
       .from('session_questions')
       .update({ flagged: !current.flagged })
       .eq('id', current.id)
-  }
-
-  async function finishSimulation() {
-    setFinishing(true)
-    const correctCount = questions.filter((q) => q.is_correct).length
-
-    await supabase
-      .from('simulation_sessions')
-      .update({
-        status: 'completed',
-        correct_answers: correctCount,
-        time_spent_seconds: elapsedRef.current,
-        finished_at: new Date().toISOString(),
-      })
-      .eq('id', session.id)
-
-    router.push(`/simulado/resultado/${session.id}`)
   }
 
   if (!question) return null
@@ -214,7 +218,7 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
             {alternatives.map((alt) => (
               <button
                 key={alt}
-                onClick={() => handleAnswer(alt)}
+                onClick={(event) => handleAnswer(alt, event.timeStamp)}
                 disabled={isAnswered}
                 className={cn(
                   'w-full text-left p-4 rounded-lg border-2 transition-all',

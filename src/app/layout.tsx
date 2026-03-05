@@ -1,21 +1,17 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
+import type { Metadata } from 'next'
 
-const inter = Inter({
-  subsets: ["latin"],
-});
+import './globals.css'
+import { ThemeProvider } from '@/components/theme-provider'
 
 export const metadata: Metadata = {
-  title: "ENAMED Study — Plataforma de Estudos ENARE/ENAMED",
-  description: "Banco de questoes e simulados para preparacao ao internato medico",
-};
+  title: 'ENAMED Study — Plataforma de Estudos ENARE/ENAMED',
+  description: 'Banco de questoes e simulados para preparacao ao internato medico',
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
@@ -26,11 +22,11 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.className} antialiased`}>
+      <body className="font-sans antialiased">
         <ThemeProvider>
           {children}
         </ThemeProvider>
       </body>
     </html>
-  );
+  )
 }

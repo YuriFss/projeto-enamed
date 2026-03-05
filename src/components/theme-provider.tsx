@@ -15,18 +15,21 @@ export function useTheme() {
   return useContext(ThemeContext)
 }
 
+function getInitialTheme(): Theme {
+  if (typeof window === 'undefined') return 'system'
+
+  const stored = localStorage.getItem('theme')
+  if (stored === 'light' || stored === 'dark' || stored === 'system') {
+    return stored
+  }
+
+  return 'system'
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('system')
-  const [mounted, setMounted] = useState(false)
+  const [theme, setTheme] = useState<Theme>(getInitialTheme)
 
   useEffect(() => {
-    const stored = localStorage.getItem('theme') as Theme | null
-    if (stored) setTheme(stored)
-    setMounted(true)
-  }, [])
-
-  useEffect(() => {
-    if (!mounted) return
     const root = document.documentElement
 
     if (theme === 'system') {
@@ -37,10 +40,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.classList.toggle('dark', theme === 'dark')
       localStorage.setItem('theme', theme)
     }
-  }, [theme, mounted])
+  }, [theme])
 
   useEffect(() => {
-    if (!mounted) return
     if (theme !== 'system') return
 
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
@@ -49,7 +51,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
     mq.addEventListener('change', handler)
     return () => mq.removeEventListener('change', handler)
-  }, [theme, mounted])
+  }, [theme])
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>

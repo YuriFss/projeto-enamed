@@ -21,7 +21,7 @@ export default async function ResultadoPage({ params }: { params: Promise<{ id: 
 
   const { data: sessionQuestions } = await supabase
     .from('session_questions')
-    .select('*, question:questions(*, specialty:specialties(*), exam:exams(*))')
+    .select('*, question:questions(*, specialty:specialties(*), exam:exams(*), topic:topics(*))')
     .eq('session_id', id)
     .order('position')
 

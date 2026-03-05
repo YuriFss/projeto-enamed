@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test --experimental-strip-types src/lib/dashboard-analytics.test.ts src/lib/dashboard-insights.test.ts src/lib/study-flow.test.ts src/lib/question-progress.test.ts src/lib/review-ranking.test.ts src/lib/question-browser.test.ts src/lib/question-bank-utils.test.ts src/lib/question-filter-favorites.test.ts src/lib/topic-analytics.test.ts src/lib/learning-analytics.test.ts src/lib/simulation-result-insights.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.9.0",

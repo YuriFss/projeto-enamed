@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 export function useUser() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
 
   useEffect(() => {
     const getUser = async () => {
@@ -24,7 +24,7 @@ export function useUser() {
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [supabase])
 
   return { user, loading }
 }
