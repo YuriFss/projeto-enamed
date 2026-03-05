@@ -1,5 +1,10 @@
-import { createClient } from '@/lib/supabase/server'
-import { getExams, getSpecialties } from '@/lib/queries'
+import { getUser } from '@/lib/supabase/get-user'
+import { getSpecialties } from '@/lib/queries'
+import {
+  buildQuestionBrowserQueryString,
+  getQuestionBankData,
+  sanitizeQuestionBrowserFilters,
+} from '@/lib/question-browser'
 import { QuestionFilters } from '@/components/question-filters'
 import { QuestionList } from '@/components/question-list'
 
@@ -9,6 +14,7 @@ interface SearchParams {
   type?: string
   specialty?: string
   difficulty?: string
+  status?: string
   page?: string
 }
 
@@ -20,43 +26,17 @@ export default async function QuestoesPage({
   searchParams: Promise<SearchParams>
 }) {
   const params = await searchParams
-  const supabase = await createClient()
-
-  // Fetch filter options (cached)
-  const [exams, specialties] = await Promise.all([getExams(), getSpecialties()])
-
-  // Build query
+  const user = await getUser()
+  const specialties = await getSpecialties()
   const page = parseInt(params.page || '1')
-  const from = (page - 1) * PAGE_SIZE
-  const to = from + PAGE_SIZE - 1
-
-  let query = supabase
-    .from('questions')
-    .select('*, exam:exams(*), specialty:specialties(*)', { count: 'exact' })
-    .order('number')
-    .range(from, to)
-
-  if (params.year) {
-    const examIds = exams.filter((e) => e.year === parseInt(params.year!)).map((e) => e.id) || []
-    if (examIds.length > 0) query = query.in('exam_id', examIds)
-  }
-  if (params.type) {
-    const examIds = exams.filter((e) => e.type === params.type).map((e) => e.id) || []
-    if (examIds.length > 0) query = query.in('exam_id', examIds)
-  }
-  if (params.specialty) {
-    query = query.eq('specialty_id', params.specialty)
-  }
-  if (params.difficulty) {
-    query = query.eq('difficulty', params.difficulty)
-  }
-
-  const { data: questions, count } = await query
-
-  const totalPages = Math.ceil((count || 0) / PAGE_SIZE)
-
-  // Get unique years
-  const years = [...new Set(exams.map((e) => e.year))].sort((a, b) => b - a)
+  const filters = sanitizeQuestionBrowserFilters(params)
+  const { questions, totalCount, totalPages, currentPage, years } = await getQuestionBankData({
+    userId: user!.id,
+    filters,
+    page,
+    pageSize: PAGE_SIZE,
+  })
+  const detailQueryString = buildQuestionBrowserQueryString(params)
 
   return (
     <div>
@@ -69,10 +49,12 @@ export default async function QuestoesPage({
       />
 
       <QuestionList
-        questions={questions || []}
-        currentPage={page}
+        questions={questions}
+        currentPage={currentPage}
         totalPages={totalPages}
-        totalCount={count || 0}
+        totalCount={totalCount}
+        detailQueryString={detailQueryString}
+        currentStatus={filters.status}
       />
     </div>
   )

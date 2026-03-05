@@ -1,13 +1,12 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
 import { Question, QuestionAttempt } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Bookmark, BookmarkCheck, ArrowLeft, Clock } from 'lucide-react'
+import { Bookmark, BookmarkCheck, ArrowLeft, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 
@@ -18,6 +17,8 @@ interface QuestionViewProps {
   userId: string
   onAnswer?: (answer: string, isCorrect: boolean) => void
   showNavigation?: boolean
+  backHref?: string
+  nextQuestionHref?: string | null
 }
 
 const alternatives = ['A', 'B', 'C', 'D', 'E'] as const
@@ -35,13 +36,18 @@ export function QuestionView({
   userId,
   onAnswer,
   showNavigation = true,
+  backHref = '/questoes',
+  nextQuestionHref = null,
 }: QuestionViewProps) {
   const [selected, setSelected] = useState<string | null>(null)
   const [answered, setAnswered] = useState(false)
   const [bookmarked, setBookmarked] = useState(initialBookmarked)
-  const [startTime] = useState(Date.now())
   const supabase = createClient()
-  const router = useRouter()
+  const startTimeRef = useRef(0)
+
+  useEffect(() => {
+    startTimeRef.current = window.performance.now()
+  }, [])
 
   const alternativeTexts: Record<string, string> = {
     A: question.alternative_a,
@@ -51,12 +57,12 @@ export function QuestionView({
     E: question.alternative_e,
   }
 
-  async function handleSelect(alt: string) {
+  async function handleSelect(alt: string, timeStamp: number) {
     if (answered) return
     setSelected(alt)
     setAnswered(true)
     const isCorrect = alt === question.correct_answer
-    const timeSpent = Math.round((Date.now() - startTime) / 1000)
+    const timeSpent = Math.max(0, Math.round((timeStamp - startTimeRef.current) / 1000))
 
     // Save attempt
     await supabase.from('question_attempts').insert({
@@ -104,10 +110,21 @@ export function QuestionView({
   return (
     <div className="max-w-3xl mx-auto">
       {showNavigation && (
-        <Link href="/questoes" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
-          <ArrowLeft className="h-4 w-4" />
-          Voltar ao banco
-        </Link>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <Link href={backHref} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" />
+            Voltar ao banco
+          </Link>
+
+          {nextQuestionHref && (
+            <Button asChild variant="outline" size="sm">
+              <Link href={nextQuestionHref}>
+                Proxima nao respondida
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          )}
+        </div>
       )}
 
       <Card>
@@ -141,7 +158,7 @@ export function QuestionView({
             {alternatives.map((alt) => (
               <button
                 key={alt}
-                onClick={() => handleSelect(alt)}
+                onClick={(event) => handleSelect(alt, event.timeStamp)}
                 disabled={answered}
                 className={cn(
                   'w-full text-left p-4 rounded-lg border-2 transition-all',

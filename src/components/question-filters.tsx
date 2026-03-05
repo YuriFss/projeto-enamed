@@ -37,7 +37,7 @@ export function QuestionFilters({ years, specialties, currentFilters }: Question
   const hasFilters = Object.values(currentFilters).some((v) => v && v !== '1')
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
       <select
         className="w-full border rounded-md px-3 py-2 text-sm bg-background"
         value={currentFilters.type || ''}
@@ -79,6 +79,16 @@ export function QuestionFilters({ years, specialties, currentFilters }: Question
         <option value="facil">Facil</option>
         <option value="medio">Medio</option>
         <option value="dificil">Dificil</option>
+      </select>
+
+      <select
+        className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+        value={currentFilters.status || ''}
+        onChange={(e) => updateFilter('status', e.target.value)}
+      >
+        <option value="">Todas</option>
+        <option value="unanswered">Nao respondidas</option>
+        <option value="answered">Ja respondidas</option>
       </select>
 
       {hasFilters && (

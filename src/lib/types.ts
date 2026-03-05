@@ -35,6 +35,8 @@ export interface Question {
   topic_id: string | null
   difficulty: 'facil' | 'medio' | 'dificil'
   created_at: string
+  isAnswered?: boolean
+  lastAnsweredAt?: string | null
   exam?: Exam
   specialty?: Specialty
   topic?: Topic

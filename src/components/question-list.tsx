@@ -13,6 +13,8 @@ interface QuestionListProps {
   currentPage: number
   totalPages: number
   totalCount: number
+  detailQueryString?: string
+  currentStatus?: string
 }
 
 const difficultyColors: Record<string, string> = {
@@ -21,7 +23,22 @@ const difficultyColors: Record<string, string> = {
   dificil: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200',
 }
 
-export function QuestionList({ questions, currentPage, totalPages, totalCount }: QuestionListProps) {
+function formatAnsweredAt(date: string) {
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(date))
+}
+
+export function QuestionList({
+  questions,
+  currentPage,
+  totalPages,
+  totalCount,
+  detailQueryString,
+  currentStatus,
+}: QuestionListProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -46,7 +63,10 @@ export function QuestionList({ questions, currentPage, totalPages, totalCount }:
 
       <div className="space-y-3">
         {questions.map((q) => (
-          <Link key={q.id} href={`/questoes/${q.id}`}>
+          <Link
+            key={q.id}
+            href={detailQueryString ? `/questoes/${q.id}?${detailQueryString}` : `/questoes/${q.id}`}
+          >
             <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
@@ -60,10 +80,20 @@ export function QuestionList({ questions, currentPage, totalPages, totalCount }:
                     <Badge className={difficultyColors[q.difficulty]}>
                       {q.difficulty}
                     </Badge>
+                    {q.isAnswered && (
+                      <Badge variant="secondary">
+                        Respondida
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-sm text-foreground line-clamp-2">
                     {q.statement}
                   </p>
+                  {currentStatus === 'answered' && q.lastAnsweredAt && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Ultima resposta em {formatAnsweredAt(q.lastAnsweredAt)}
+                    </p>
+                  )}
                 </div>
               </div>
             </Card>
