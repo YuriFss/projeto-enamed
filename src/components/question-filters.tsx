@@ -138,7 +138,7 @@ export function QuestionFilters({
   const hasFilters = chips.length > 0
 
   return (
-    <section className="sticky top-[4.75rem] z-20 mb-6 rounded-[2rem] border border-white/65 bg-white/78 p-4 shadow-[0_25px_70px_-55px_rgba(15,23,42,0.55)] backdrop-blur-xl dark:border-white/10 dark:bg-card/82 lg:top-6">
+    <section className="mb-6 rounded-[2rem] border border-white/65 bg-white/78 p-4 shadow-[0_25px_70px_-55px_rgba(15,23,42,0.55)] backdrop-blur-xl dark:border-white/10 dark:bg-card/82 lg:sticky lg:top-6 lg:z-20">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(145deg,#be185d,#f472b6)] text-white shadow-lg">
