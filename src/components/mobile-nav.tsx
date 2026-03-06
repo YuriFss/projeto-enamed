@@ -49,7 +49,6 @@ export function MobileNav({ user }: { user: User }) {
           </div>
 
           <div className="flex items-center gap-1">
-            <ThemeToggle />
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-2xl">
@@ -80,6 +79,10 @@ export function MobileNav({ user }: { user: User }) {
                     <p className="truncate text-sm font-semibold">{user.user_metadata?.full_name || 'Usuario'}</p>
                     <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                   </div>
+                </div>
+
+                <div className="mt-4">
+                  <ThemeToggle fullWidth />
                 </div>
 
                 <nav className="mt-5 space-y-2">

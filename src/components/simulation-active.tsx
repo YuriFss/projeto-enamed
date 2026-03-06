@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { SimulationSession, SessionQuestion } from '@/lib/types'
+import { getQuestionAlternatives } from '@/lib/question-alternatives'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -17,10 +18,9 @@ interface SimulationActiveProps {
   userId: string
 }
 
-const alternatives = ['A', 'B', 'C', 'D', 'E'] as const
-
 export function SimulationActive({ session, sessionQuestions: initialSQ, userId }: SimulationActiveProps) {
   const [questions, setQuestions] = useState(initialSQ)
+  const [pendingAnswers, setPendingAnswers] = useState<Record<string, 'A' | 'B' | 'C' | 'D' | 'E'>>({})
   const [currentIndex, setCurrentIndex] = useState(() => {
     const firstUnanswered = initialSQ.findIndex((sq) => !sq.selected_answer)
     return firstUnanswered >= 0 ? firstUnanswered : 0
@@ -28,6 +28,7 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
   const elapsedRef = useRef(session.time_spent_seconds)
   const questionStartRef = useRef(0)
   const [finishing, setFinishing] = useState(false)
+  const [submittingAnswer, setSubmittingAnswer] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -63,38 +64,61 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
     void finishSimulation()
   }, [finishSimulation])
 
-  async function handleAnswer(alt: 'A' | 'B' | 'C' | 'D' | 'E', timeStamp: number) {
+  function handleSelectAnswer(alt: 'A' | 'B' | 'C' | 'D' | 'E') {
     if (!current || !question) return
     if (current.selected_answer && session.mode === 'prova') return
     if (current.selected_answer && session.mode === 'estudo') return
 
-    const timeSpent = Math.max(0, Math.round((timeStamp - questionStartRef.current) / 1000))
-    const isCorrect = alt === question.correct_answer
+    setPendingAnswers((previous) => ({ ...previous, [current.id]: alt }))
+  }
 
-    const updatedQuestions = [...questions]
-    updatedQuestions[currentIndex] = {
-      ...current,
-      selected_answer: alt,
-      is_correct: isCorrect,
-      time_spent_seconds: timeSpent,
+  async function handleConfirmAnswer() {
+    if (!current || !question || submittingAnswer) return
+    if (current.selected_answer && session.mode === 'prova') return
+    if (current.selected_answer && session.mode === 'estudo') return
+
+    const pendingAnswer = pendingAnswers[current.id]
+
+    if (!pendingAnswer) return
+
+    setSubmittingAnswer(true)
+
+    try {
+      const timeSpent = Math.max(0, Math.round((window.performance.now() - questionStartRef.current) / 1000))
+      const isCorrect = pendingAnswer === question.correct_answer
+
+      const updatedQuestions = [...questions]
+      updatedQuestions[currentIndex] = {
+        ...current,
+        selected_answer: pendingAnswer,
+        is_correct: isCorrect,
+        time_spent_seconds: timeSpent,
+      }
+      setQuestions(updatedQuestions)
+      setPendingAnswers((previous) => {
+        const next = { ...previous }
+        delete next[current.id]
+        return next
+      })
+
+      // Update in DB
+      await supabase
+        .from('session_questions')
+        .update({ selected_answer: pendingAnswer, is_correct: isCorrect, time_spent_seconds: timeSpent })
+        .eq('id', current.id)
+
+      // Record attempt
+      await supabase.from('question_attempts').insert({
+        user_id: userId,
+        question_id: current.question_id,
+        session_id: session.id,
+        selected_answer: pendingAnswer,
+        is_correct: isCorrect,
+        time_spent_seconds: timeSpent,
+      })
+    } finally {
+      setSubmittingAnswer(false)
     }
-    setQuestions(updatedQuestions)
-
-    // Update in DB
-    await supabase
-      .from('session_questions')
-      .update({ selected_answer: alt, is_correct: isCorrect, time_spent_seconds: timeSpent })
-      .eq('id', current.id)
-
-    // Record attempt
-    await supabase.from('question_attempts').insert({
-      user_id: userId,
-      question_id: current.question_id,
-      session_id: session.id,
-      selected_answer: alt,
-      is_correct: isCorrect,
-      time_spent_seconds: timeSpent,
-    })
   }
 
   function goTo(index: number) {
@@ -114,20 +138,17 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
 
   if (!question) return null
 
-  const alternativeTexts: Record<string, string> = {
-    A: question.alternative_a,
-    B: question.alternative_b,
-    C: question.alternative_c,
-    D: question.alternative_d,
-    E: question.alternative_e,
-  }
+  const alternatives = getQuestionAlternatives(question)
 
   const isAnswered = !!current.selected_answer
   const showFeedback = session.mode === 'estudo' && isAnswered
+  const pendingAnswer = current ? pendingAnswers[current.id] : undefined
 
   function getAlternativeStyle(alt: string) {
     if (!showFeedback) {
-      return current.selected_answer === alt ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950' : 'border-border hover:border-border/80'
+      return pendingAnswer === alt || current.selected_answer === alt
+        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950'
+        : 'border-border hover:border-border/80'
     }
     if (alt === question!.correct_answer) {
       return 'border-green-500 bg-green-50 dark:bg-green-950'
@@ -215,22 +236,55 @@ export function SimulationActive({ session, sessionQuestions: initialSQ, userId 
           </p>
 
           <div className="space-y-3">
-            {alternatives.map((alt) => (
+            {alternatives.map((alternative) => (
               <button
-                key={alt}
-                onClick={(event) => handleAnswer(alt, event.timeStamp)}
-                disabled={isAnswered}
+                key={alternative.key}
+                onClick={() => handleSelectAnswer(alternative.key)}
+                disabled={isAnswered || submittingAnswer}
                 className={cn(
                   'w-full text-left p-4 rounded-lg border-2 transition-all',
-                  getAlternativeStyle(alt),
+                  getAlternativeStyle(alternative.key),
                   !isAnswered && 'cursor-pointer'
                 )}
               >
-                <span className="font-medium mr-3">({alt})</span>
-                {alternativeTexts[alt]}
+                <span className="font-medium mr-3">({alternative.key})</span>
+                {alternative.text}
               </button>
             ))}
           </div>
+
+          {!isAnswered && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 p-4">
+              <div>
+                <p className="text-sm font-medium">
+                  {pendingAnswer ? `Alternativa ${pendingAnswer} selecionada` : 'Escolha uma alternativa'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  O simulado so contabiliza a resposta depois da confirmacao.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {pendingAnswer && (
+                  <Button
+                    variant="ghost"
+                    onClick={() =>
+                      setPendingAnswers((previous) => {
+                        const next = { ...previous }
+                        delete next[current.id]
+                        return next
+                      })
+                    }
+                    disabled={submittingAnswer}
+                  >
+                    Limpar
+                  </Button>
+                )}
+                <Button onClick={handleConfirmAnswer} disabled={!pendingAnswer || submittingAnswer}>
+                  {submittingAnswer ? 'Confirmando...' : 'Confirmar resposta'}
+                </Button>
+              </div>
+            </div>
+          )}
 
           {showFeedback && question.explanation && (
             <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">

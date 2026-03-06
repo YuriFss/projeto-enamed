@@ -20,6 +20,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { getQuestionAlternatives } from '@/lib/question-alternatives'
 import { formatAttemptDate, formatAverageQuestionTime } from '@/lib/question-progress'
 import { createClient } from '@/lib/supabase/client'
 import { Question, QuestionAttempt, QuestionHistorySummary } from '@/lib/types'
@@ -50,8 +51,6 @@ interface QuestionViewProps {
   nextLabel?: string
 }
 
-const alternatives = ['A', 'B', 'C', 'D', 'E'] as const
-
 const difficultyClasses: Record<string, string> = {
   facil: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
   medio: 'border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300',
@@ -78,45 +77,53 @@ export function QuestionView({
   nextLabel = 'Proxima',
 }: QuestionViewProps) {
   const [selected, setSelected] = useState<string | null>(null)
+  const [pendingAnswer, setPendingAnswer] = useState<string | null>(null)
   const [answered, setAnswered] = useState(false)
   const [bookmarked, setBookmarked] = useState(initialBookmarked)
+  const [submittingAnswer, setSubmittingAnswer] = useState(false)
   const supabase = createClient()
   const startTimeRef = useRef(0)
 
   useEffect(() => {
     startTimeRef.current = window.performance.now()
-  }, [])
+  }, [question.id])
 
-  const alternativeTexts: Record<string, string> = {
-    A: question.alternative_a,
-    B: question.alternative_b,
-    C: question.alternative_c,
-    D: question.alternative_d,
-    E: question.alternative_e,
-  }
+  const alternatives = getQuestionAlternatives(question)
   const visibleHistory = historySummary || question.history || null
   const progressValue = sequenceContext
     ? Math.round((sequenceContext.currentPosition / sequenceContext.totalCount) * 100)
     : 0
 
-  async function handleSelect(alt: string, timeStamp: number) {
-    if (answered) return
+  function handleSelect(alt: string) {
+    if (answered || submittingAnswer) return
 
-    setSelected(alt)
-    setAnswered(true)
+    setPendingAnswer(alt)
+  }
 
-    const isCorrect = alt === question.correct_answer
-    const timeSpent = Math.max(0, Math.round((timeStamp - startTimeRef.current) / 1000))
+  async function handleConfirmAnswer() {
+    if (answered || !pendingAnswer || submittingAnswer) return
 
-    await supabase.from('question_attempts').insert({
-      user_id: userId,
-      question_id: question.id,
-      selected_answer: alt,
-      is_correct: isCorrect,
-      time_spent_seconds: timeSpent,
-    })
+    setSubmittingAnswer(true)
 
-    onAnswer?.(alt, isCorrect)
+    try {
+      const isCorrect = pendingAnswer === question.correct_answer
+      const timeSpent = Math.max(0, Math.round((window.performance.now() - startTimeRef.current) / 1000))
+
+      await supabase.from('question_attempts').insert({
+        user_id: userId,
+        question_id: question.id,
+        selected_answer: pendingAnswer,
+        is_correct: isCorrect,
+        time_spent_seconds: timeSpent,
+      })
+
+      setSelected(pendingAnswer)
+      setAnswered(true)
+
+      onAnswer?.(pendingAnswer, isCorrect)
+    } finally {
+      setSubmittingAnswer(false)
+    }
   }
 
   async function toggleBookmark() {
@@ -138,7 +145,7 @@ export function QuestionView({
 
   function getAlternativeStyle(alt: string) {
     if (!answered) {
-      return selected === alt
+      return pendingAnswer === alt
         ? 'border-[#db2777]/40 bg-[#db2777]/8'
         : 'border-border/80 bg-background/70 hover:border-[#db2777]/20 hover:bg-[#db2777]/5'
     }
@@ -238,9 +245,15 @@ export function QuestionView({
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             <div className="rounded-3xl border border-white/12 bg-black/12 p-4 backdrop-blur-sm">
               <p className="text-xs uppercase tracking-[0.22em] text-white/62">Status</p>
-              <p className="mt-2 text-lg font-semibold">{answered ? 'Respondida agora' : 'Aguardando resposta'}</p>
+              <p className="mt-2 text-lg font-semibold">
+                {answered ? 'Respondida agora' : pendingAnswer ? 'Pronta para confirmar' : 'Aguardando resposta'}
+              </p>
               <p className="mt-1 text-sm text-white/72">
-                {answered ? 'O feedback ja esta visivel abaixo.' : 'Selecione uma alternativa para liberar a explicacao.'}
+                {answered
+                  ? 'O feedback ja esta visivel abaixo.'
+                  : pendingAnswer
+                    ? 'Revise sua escolha antes de contabilizar.'
+                    : 'Selecione uma alternativa para liberar a explicacao.'}
               </p>
             </div>
             <div className="rounded-3xl border border-white/12 bg-black/12 p-4 backdrop-blur-sm">
@@ -398,19 +411,22 @@ export function QuestionView({
           )}
 
           <div className="mt-8 space-y-3">
-            {alternatives.map((alt) => {
-              const isCorrect = answered && alt === question.correct_answer
-              const isWrongSelected = answered && alt === selected && alt !== question.correct_answer
+            {alternatives.map((alternative) => {
+              const isCorrect = answered && alternative.key === question.correct_answer
+              const isWrongSelected =
+                answered &&
+                alternative.key === selected &&
+                alternative.key !== question.correct_answer
 
               return (
                 <button
-                  key={alt}
+                  key={alternative.key}
                   type="button"
-                  onClick={(event) => handleSelect(alt, event.timeStamp)}
-                  disabled={answered}
+                  onClick={() => handleSelect(alternative.key)}
+                  disabled={answered || submittingAnswer}
                   className={cn(
                     'w-full rounded-[1.5rem] border p-4 text-left transition-all sm:p-5',
-                    getAlternativeStyle(alt),
+                    getAlternativeStyle(alternative.key),
                     !answered && 'cursor-pointer'
                   )}
                 >
@@ -425,16 +441,48 @@ export function QuestionView({
                             : 'border-border/70 bg-background/80 text-foreground'
                       )}
                     >
-                      {alt}
+                      {alternative.key}
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm leading-7 sm:text-base">{alternativeTexts[alt]}</p>
+                      <p className="text-sm leading-7 sm:text-base">{alternative.text}</p>
                     </div>
                   </div>
                 </button>
               )
             })}
           </div>
+
+          {!answered && (
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-border/70 bg-background/72 p-4">
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  {pendingAnswer ? `Alternativa ${pendingAnswer} selecionada` : 'Escolha uma alternativa'}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  A resposta so entra no historico depois da confirmacao.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {pendingAnswer && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setPendingAnswer(null)}
+                    disabled={submittingAnswer}
+                  >
+                    Limpar
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  onClick={handleConfirmAnswer}
+                  disabled={!pendingAnswer || submittingAnswer}
+                >
+                  {submittingAnswer ? 'Confirmando...' : 'Confirmar resposta'}
+                </Button>
+              </div>
+            </div>
+          )}
 
           {answered && question.explanation && (
             <div className="mt-8 rounded-[1.75rem] border border-[#db2777]/14 bg-[linear-gradient(180deg,rgba(236,72,153,0.1),rgba(249,168,212,0.04))] p-5">

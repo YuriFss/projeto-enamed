@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Exam, Specialty } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
@@ -16,21 +16,170 @@ interface SimulationSetupProps {
   activeSessionId?: string
 }
 
+const DEFAULT_NUM_QUESTIONS = 10
+const MAX_NUM_QUESTIONS = 100
+const DEFAULT_TIME_LIMIT = '0'
+const MAX_TIME_LIMIT = 300
+
+function sanitizeNumericInput(value: string) {
+  return value.replace(/\D/g, '')
+}
+
+function parseIntegerInput(value: string) {
+  if (!value) {
+    return null
+  }
+
+  const parsed = Number.parseInt(value, 10)
+  return Number.isNaN(parsed) ? null : parsed
+}
+
+function getFilteredExamIds(exams: Exam[], examType: string, year: string) {
+  return exams
+    .filter((exam) => {
+      if (examType && exam.type !== examType) {
+        return false
+      }
+
+      if (year && exam.year !== Number(year)) {
+        return false
+      }
+
+      return true
+    })
+    .map((exam) => exam.id)
+}
+
 export function SimulationSetup({ exams, specialties, activeSessionId }: SimulationSetupProps) {
   const [mode, setMode] = useState<'prova' | 'estudo'>('estudo')
   const [examType, setExamType] = useState('')
   const [year, setYear] = useState('')
   const [specialtyId, setSpecialtyId] = useState('')
-  const [numQuestions, setNumQuestions] = useState(10)
-  const [timeLimit, setTimeLimit] = useState(0)
+  const [numQuestionsInput, setNumQuestionsInput] = useState(String(DEFAULT_NUM_QUESTIONS))
+  const [timeLimitInput, setTimeLimitInput] = useState(DEFAULT_TIME_LIMIT)
+  const [availableQuestions, setAvailableQuestions] = useState<number | null>(null)
+  const [checkingAvailability, setCheckingAvailability] = useState(true)
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null)
+  const [numQuestionsError, setNumQuestionsError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   const years = [...new Set(exams.map((e) => e.year))].sort((a, b) => b - a)
+  const parsedNumQuestions = parseIntegerInput(numQuestionsInput)
+  const parsedTimeLimit = parseIntegerInput(timeLimitInput)
+  const maxSelectableQuestions =
+    availableQuestions === null ? MAX_NUM_QUESTIONS : Math.min(availableQuestions, MAX_NUM_QUESTIONS)
+  const isNumQuestionsInvalid =
+    parsedNumQuestions === null ||
+    parsedNumQuestions < 1 ||
+    parsedNumQuestions > MAX_NUM_QUESTIONS ||
+    (availableQuestions !== null && parsedNumQuestions > availableQuestions)
+  const isTimeLimitInvalid = parsedTimeLimit !== null && parsedTimeLimit > MAX_TIME_LIMIT
+
+  useEffect(() => {
+    let isActive = true
+
+    async function loadAvailableQuestions() {
+      setCheckingAvailability(true)
+      setAvailabilityError(null)
+
+      const examIds = getFilteredExamIds(exams, examType, year)
+
+      if ((examType || year) && examIds.length === 0) {
+        if (!isActive) {
+          return
+        }
+
+        setAvailableQuestions(0)
+        setCheckingAvailability(false)
+        return
+      }
+
+      const supabase = createClient()
+      let query = supabase.from('questions').select('id', { count: 'exact', head: true })
+
+      if (examIds.length > 0) {
+        query = query.in('exam_id', examIds)
+      }
+
+      if (specialtyId) {
+        query = query.eq('specialty_id', specialtyId)
+      }
+
+      const { count, error } = await query
+
+      if (!isActive) {
+        return
+      }
+
+      if (error) {
+        console.error(error)
+        setAvailableQuestions(null)
+        setAvailabilityError('Nao foi possivel validar o total de questoes agora.')
+        setCheckingAvailability(false)
+        return
+      }
+
+      setAvailableQuestions(count ?? 0)
+      setCheckingAvailability(false)
+    }
+
+    void loadAvailableQuestions()
+
+    return () => {
+      isActive = false
+    }
+  }, [examType, year, specialtyId, exams])
+
+  function handleNumQuestionsBlur() {
+    const parsedValue = parseIntegerInput(numQuestionsInput)
+
+    if (parsedValue === null || availableQuestions === 0) {
+      return
+    }
+
+    const normalizedValue = Math.max(1, Math.min(parsedValue, maxSelectableQuestions))
+    setNumQuestionsInput(String(normalizedValue))
+  }
+
+  function handleTimeLimitBlur() {
+    const parsedValue = parseIntegerInput(timeLimitInput)
+
+    if (parsedValue === null) {
+      return
+    }
+
+    const normalizedValue = Math.min(parsedValue, MAX_TIME_LIMIT)
+    setTimeLimitInput(String(normalizedValue))
+  }
 
   async function handleStart() {
+    const requestedQuestions = parseIntegerInput(numQuestionsInput)
+
+    if (requestedQuestions === null) {
+      setNumQuestionsError('Informe quantas questoes voce quer no simulado.')
+      return
+    }
+
+    if (requestedQuestions < 1) {
+      setNumQuestionsError('O simulado precisa ter pelo menos 1 questao.')
+      return
+    }
+
+    if (requestedQuestions > MAX_NUM_QUESTIONS) {
+      setNumQuestionsError(`Escolha ate ${MAX_NUM_QUESTIONS} questoes por simulado.`)
+      return
+    }
+
+    if (availableQuestions !== null && requestedQuestions > availableQuestions) {
+      setNumQuestionsError(`Esse recorte tem ${availableQuestions} questoes disponiveis.`)
+      return
+    }
+
+    setNumQuestionsError(null)
     setLoading(true)
+
+    const supabase = createClient()
 
     // Build filters for question selection
     const filters: Record<string, string> = {}
@@ -38,33 +187,53 @@ export function SimulationSetup({ exams, specialties, activeSessionId }: Simulat
     if (year) filters.year = year
     if (specialtyId) filters.specialty_id = specialtyId
 
-    // Fetch questions matching filters
-    let query = supabase.from('questions').select('id, exam:exams!inner(type, year)')
+    const examIds = getFilteredExamIds(exams, examType, year)
 
-    if (examType) {
-      query = query.eq('exam.type', examType)
+    if ((examType || year) && examIds.length === 0) {
+      setNumQuestionsError('Nenhuma questao encontrada com esses filtros.')
+      setLoading(false)
+      return
     }
-    if (year) {
-      query = query.eq('exam.year', parseInt(year))
+
+    // Fetch questions matching filters
+    let query = supabase.from('questions').select('id')
+
+    if (examIds.length > 0) {
+      query = query.in('exam_id', examIds)
     }
     if (specialtyId) {
       query = query.eq('specialty_id', specialtyId)
     }
 
-    const { data: allQuestions } = await query
+    const { data: allQuestions, error: questionsError } = await query
+
+    if (questionsError) {
+      console.error(questionsError)
+      setNumQuestionsError('Nao foi possivel carregar as questoes desse recorte.')
+      setLoading(false)
+      return
+    }
 
     if (!allQuestions || allQuestions.length === 0) {
-      alert('Nenhuma questao encontrada com esses filtros.')
+      setNumQuestionsError('Nenhuma questao encontrada com esses filtros.')
+      setLoading(false)
+      return
+    }
+
+    if (requestedQuestions > allQuestions.length) {
+      setNumQuestionsError(`Esse recorte tem ${allQuestions.length} questoes disponiveis.`)
       setLoading(false)
       return
     }
 
     // Shuffle and pick
     const shuffled = allQuestions.sort(() => Math.random() - 0.5)
-    const selected = shuffled.slice(0, Math.min(numQuestions, allQuestions.length))
+    const selected = shuffled.slice(0, requestedQuestions)
 
     // Get user
     const { data: { user } } = await supabase.auth.getUser()
+
+    const timeLimit = Math.min(parsedTimeLimit ?? 0, MAX_TIME_LIMIT)
 
     // Create session
     const { data: session, error: sessionError } = await supabase
@@ -119,6 +288,7 @@ export function SimulationSetup({ exams, specialties, activeSessionId }: Simulat
             <Label className="mb-2 block">Modo</Label>
             <div className="flex gap-3">
               <Button
+                type="button"
                 variant={mode === 'estudo' ? 'default' : 'outline'}
                 onClick={() => setMode('estudo')}
                 className="flex-1"
@@ -126,6 +296,7 @@ export function SimulationSetup({ exams, specialties, activeSessionId }: Simulat
                 Estudo
               </Button>
               <Button
+                type="button"
                 variant={mode === 'prova' ? 'default' : 'outline'}
                 onClick={() => setMode('prova')}
                 className="flex-1"
@@ -180,28 +351,71 @@ export function SimulationSetup({ exams, specialties, activeSessionId }: Simulat
           </div>
 
           <div>
-            <Label className="mb-2 block">Numero de questoes</Label>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <Label>Quantidade de questoes</Label>
+              <span className="text-xs text-muted-foreground">
+                {checkingAvailability
+                  ? 'Consultando banco...'
+                  : availableQuestions === null
+                    ? 'Total indisponivel'
+                    : `${availableQuestions} disponiveis`}
+              </span>
+            </div>
             <Input
               type="number"
+              inputMode="numeric"
               min={1}
-              max={100}
-              value={numQuestions}
-              onChange={(e) => setNumQuestions(parseInt(e.target.value) || 10)}
+              max={maxSelectableQuestions > 0 ? maxSelectableQuestions : MAX_NUM_QUESTIONS}
+              value={numQuestionsInput}
+              onChange={(e) => {
+                setNumQuestionsInput(sanitizeNumericInput(e.target.value))
+                setNumQuestionsError(null)
+              }}
+              onBlur={handleNumQuestionsBlur}
+              aria-invalid={numQuestionsError ? 'true' : 'false'}
             />
+            <p className="mt-2 text-xs text-muted-foreground">
+              {availabilityError
+                ? availabilityError
+                : availableQuestions === 0
+                  ? 'Nao existem questoes para esse recorte. Ajuste os filtros para continuar.'
+                  : 'Apague o valor e digite outro numero livremente.'}
+            </p>
+            {numQuestionsError && (
+              <p className="mt-2 text-sm text-destructive">{numQuestionsError}</p>
+            )}
           </div>
 
           <div>
             <Label className="mb-2 block">Tempo limite (minutos, 0 = sem limite)</Label>
             <Input
               type="number"
+              inputMode="numeric"
               min={0}
-              max={300}
-              value={timeLimit}
-              onChange={(e) => setTimeLimit(parseInt(e.target.value) || 0)}
+              max={MAX_TIME_LIMIT}
+              value={timeLimitInput}
+              onChange={(e) => setTimeLimitInput(sanitizeNumericInput(e.target.value))}
+              onBlur={handleTimeLimitBlur}
+              aria-invalid={isTimeLimitInvalid ? 'true' : 'false'}
             />
+            {isTimeLimitInvalid && (
+              <p className="mt-2 text-sm text-destructive">
+                Escolha ate {MAX_TIME_LIMIT} minutos.
+              </p>
+            )}
           </div>
 
-          <Button className="w-full" onClick={handleStart} disabled={loading}>
+          <Button
+            className="w-full"
+            onClick={handleStart}
+            disabled={
+              loading ||
+              checkingAvailability ||
+              availableQuestions === 0 ||
+              isNumQuestionsInvalid ||
+              isTimeLimitInvalid
+            }
+          >
             {loading ? 'Criando...' : 'Iniciar Simulado'}
           </Button>
         </CardContent>

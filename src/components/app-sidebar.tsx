@@ -53,6 +53,10 @@ export function AppSidebar({ user }: { user: User }) {
           </p>
         </div>
 
+        <div className="mt-4">
+          <ThemeToggle fullWidth />
+        </div>
+
         <div className="mt-6">
           <p className="px-2 text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">
             Navegacao
@@ -103,7 +107,6 @@ export function AppSidebar({ user }: { user: User }) {
               </p>
               <p className="truncate text-xs text-muted-foreground">{user.email}</p>
             </div>
-            <ThemeToggle />
           </div>
 
           <div className="mt-4 rounded-2xl border border-border/70 bg-background/80 p-3">
